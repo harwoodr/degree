@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+	<link href="css/ui-lightness/jquery-ui-1.10.4.css" rel="stylesheet">
+        <link href="css/sloan.css" rel="stylesheet">
+        <link href="css/grid.css" rel="stylesheet">
+        
+	<script src="js/jquery-2.1.0.min.js"></script>
+	<script src="js/jquery-ui-1.10.4.js"></script>        
+        <script type='text/javascript' src='js/knockout-3.1.0.debug.js'></script>
+        <script type='text/javascript' src='js/knockout.mapping-latest.js'></script>
+        <script type='text/javascript' src='js/knockout.simpleGrid.3.0.js'></script>        
+
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script>
+	$(function() {
+            $( "#tabs" ).tabs();
+            
+            //var spinner = $( "#aminutes, #aseconds, #distance" ).spinner();
+            
+            $( "#radio" ).buttonset();
+            
+            
+        });
+            
+        </script>
+        
+        <script type="text/javascript">
+            // Here's my data model
+            var sessionViewModel = function(aminutes, aseconds, distance, fontsize, units) {
+                this.aminutes = ko.observable(1);
+                this.aseconds = ko.observable(0);
+                this.distance = ko.observable(10);
+                this.units = ko.observable("cm");
+                
+                this.fontsize = ko.computed(function() {
+                    // Knockout tracks dependencies automatically. It knows that fullName depends on firstName and lastName, because these get called when evaluating fullName.
+                    //return this.firstName() + " " + this.lastName();
+                    var result = this.distance() * Math.tan((this.aminutes() * Math.PI/10800 + this.aseconds() * Math.PI/648000)/2);
+                    return result;
+                }, this);
+                
+
+            };
+            var datafetch1 = $.ajax({
+                type: 'GET',
+                url: 'degree/participant.json',
+                dataType: 'json',
+                success: function() { },
+                data: {},
+                async: false
+            });
+            var initialData1 = datafetch1.responseJSON.participantSet;
+            //console.log(datafetch);
+            var participantPagedGridModel = function(items) {
+                this.items = ko.observableArray(items);
+
+                this.sortByToken = function() {
+                    this.items.sort(function(a, b) {
+                        return a.token < b.token ? -1 : 1;
+                    });
+                };
+
+                this.sortByID = function() {
+                    this.items.sort(function(a, b) {
+                        return a.id < b.id ? -1 : 1;
+                    });
+                };
+
+                this.sortByName = function() {
+                    this.items.sort(function(a, b) {
+                        return a.lname < b.lname ? -1 : 1;
+                    });
+                };
+
+                this.jumpToFirstPage = function() {
+                    this.participantViewModel.currentPageIndex(0);
+                };
+
+                this.participantViewModel = new ko.simpleGrid.viewModel({
+                    data: this.items,
+                    columns: [
+                        { headerText: "ID", rowText: "id" },
+                        { headerText: "Last Name", rowText: "lname" },
+                        { headerText: "First Name", rowText: "fname" },
+                        { headerText: "Token", rowText: "token" }
+                    ],
+                    pageSize: 4
+                });
+            };
+            var datafetch2 = $.ajax({
+                type: 'GET',
+                url: 'degree/device.json',
+                dataType: 'json',
+                success: function() { },
+                data: {},
+                async: false
+            });
+            var initialData2 = datafetch2.responseJSON.deviceSet;
+            //console.log(datafetch);
+            var devicePagedGridModel = function(items) {
+                this.items = ko.observableArray(items);
+
+                this.sortByID = function() {
+                    this.items.sort(function(a, b) {
+                        return a.id < b.id ? -1 : 1;
+                    });
+                };
+
+                this.sortByName = function() {
+                    this.items.sort(function(a, b) {
+                        return a.name < b.name ? -1 : 1;
+                    });
+                };
+                
+                this.sortByOS = function() {
+                    this.items.sort(function(a, b) {
+                        return a.os < b.os ? -1 : 1;
+                    });
+                };
+                
+                this.jumpToFirstPage = function() {
+                    this.deviceViewModel.currentPageIndex(0);
+                };
+
+                this.deviceViewModel = new ko.simpleGrid.viewModel({
+                    data: this.items,
+                    columns: [
+                        { headerText: "ID", rowText: "id" },
+                        { headerText: "Name", rowText: "name" },
+                        { headerText: "Type", rowText: "type" },
+                        { headerText: "Xres", rowText: "xres" },
+                        { headerText: "Yres", rowText: "yres" },
+                        { headerText: "Diag", rowText: "diagonal" },
+                        { headerText: "OS", rowText: "os" },
+                        { headerText: "Version", rowText: "version" }
+                    ],
+                    pageSize: 4
+                });
+            };            
+            
+                var testModel = ko.mapping.fromJS(initialData2);
+    
+                function masterVm() {
+                this.vm1 = ko.observable(new sessionViewModel());
+                this.vm2 = ko.observable(new participantPagedGridModel(initialData1));
+                this.vm3 = ko.observable(new devicePagedGridModel(initialData2));
+
+                
+            }
+        $(document).ready(function (){ 
+            ko.applyBindings(new masterVm(), document.getElementById('page')); 
+        });
+        
+        </script>
+    </head>
+    <body>
+        <div id="tabs">
+            <ul>
+                
+                <li><a href="#tabs-1">Participant</a></li>
+                <li><a href="#tabs-2">Device</a></li>
+                <li><a href="#tabs-3">Session</a></li>
+                <li><a href="#tabs-4">Stage</a></li>
+                <li><a href="#tabs-5">Reading</a></li>
+            </ul>
+            <div id="tabs-3" class='sessionDetails' data-bind="with: vm1">
+                <p>
+                    <label for="aminutes">Angle Minutes:</label>
+                    <input id="aminutes" name="aminutes" data-bind="value: aminutes">
+                </p>
+                <p>
+                    <label for="aseconds">Angle Seconds:</label>
+                    <input id="aseconds" name="aseconds" data-bind="value: aseconds">
+                </p>
+                <p>
+                    <label for="distance">Distance:</label> 
+                    <input id="distance" name="distance" data-bind="value: distance">
+                     <span id="units">
+                        <input type="radio" id="units1" name="radio" checked value="cm" data-bind="checked: units"><label for="radio1">cm</label>
+                        <input type="radio" id="units2" name="radio" value="in" data-bind="checked: units"><label for="radio2">in</label>
+                    </span>
+                </p>
+                <p>
+                    <label for="fontsize">Resulting Font Size: </label><strong data-bind="text: fontsize"></strong> <strong data-bind="text: units"></strong>
+                </p>                
+            </div>
+            <div id="tabs-1">
+<div class='liveExample' data-bind="with: vm2"> 
+    
+    <div data-bind='simpleGrid: participantViewModel'> </div>
+     
+    <button data-bind='click: sortByName'>
+        Sort by last name
+    </button>
+    <button data-bind='click: sortByID'>
+        Sort by ID
+    </button>
+    <button data-bind='click: sortByToken'>
+        Sort by token
+    </button>
+    <button data-bind='click: jumpToFirstPage, enable: participantViewModel.currentPageIndex'>
+        Jump to first page
+    </button>
+    
+</div>
+            </div>
+            <div id="tabs-2">
+<div class='liveExample' data-bind="with: vm3"> 
+    
+    <div data-bind='simpleGrid: deviceViewModel'> </div>
+     
+    <button data-bind='click: sortByName'>
+        Sort by name
+    </button>
+    <button data-bind='click: sortByID'>
+        Sort by ID
+    </button>
+    <button data-bind='click: sortByOS'>
+        Sort by OS
+    </button>
+    <button data-bind='click: jumpToFirstPage, enable: deviceViewModel.currentPageIndex'>
+        Jump to first page
+    </button>
+    
+</div>            
+            </div>
+            <div id="tabs-4">
+
+            </div>
+            <div id="tabs-5">
+                
+            </div>
+        </div>
+    </body>
+</html>
